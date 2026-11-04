@@ -21,4 +21,4 @@ document.querySelectorAll('.nav').forEach(n=>n.onclick=()=>{page=n.dataset.page;
 
 
 
-StudyCloud.init({read:()=>db,replace:value=>{db=value;selected=0;render()},render,blank:()=>{const p=fresh('Semester 1 · VLSI',true);return {version:1,active:p.id,profiles:[p]}}});
+StudyCloud.init({read:()=>db,replace:value=>{db=value;selected=0;render()},render,blank:()=>{const p=fresh('My studies');return {version:1,active:p.id,profiles:[p]}}});
