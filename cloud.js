@@ -5,6 +5,8 @@
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const clone=x=>structuredClone(x);
   const config=window.STUDY_CLOUD_CONFIG||{};
+  const redirectUrl=()=>location.origin+location.pathname;
+  const oauthProviders=[{id:'google',name:'Google',enabled:config.googleEnabled},{id:'github',name:'GitHub',enabled:config.githubEnabled}];
   function configured(){
     if(!/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(config.url||''))return false;
     if(/^sb_publishable_/.test(config.publishableKey||''))return true;
@@ -82,9 +84,9 @@
       <p class="note">Unsynced changes stay on this device until saved. If another device has saved newer changes, export a backup before loading the latest account data.</p>
       <hr><h3>Bring your existing work</h3><p class="note">Copy this browser’s guest workspace into this account. This replaces this account’s current profiles after confirmation.</p><button class="button secondary import-guest" ${!ready||conflict?'disabled':''}>Copy guest workspace to my account</button><p><button class="button secondary sign-out">Sign out</button></p>`:`
       <p class="muted">Sign in to save your profiles and progress privately, and continue on another device.</p>
-      ${config.githubEnabled?'<p><button class="button github-signin">Continue with GitHub</button></p>':''}
-      ${config.emailEnabled!==false?'<form id="accountForm"><div class="field"><label for="accountEmail">Email</label><input id="accountEmail" type="email" autocomplete="username" required></div><div class="field"><label for="accountPassword">Password</label><input id="accountPassword" type="password" autocomplete="current-password" minlength="8" required></div><p id="authResult" class="account-message" role="status" aria-live="polite"></p><div class="toolbar section"><button class="button" type="submit">Sign in</button><button class="button secondary create-account" type="button">Create account</button></div><button class="text-button reset-password" type="button">Forgot your password?</button></form>':''}
-      <p class="note">Guest tracking remains available without signing in. Signing in loads your account workspace; guest work can be copied in afterward.</p>`}`;
+      <div class="auth-providers">${oauthProviders.filter(p=>p.enabled||p.id==='google').map(p=>`<button class="button secondary oauth-signin ${p.id}-signin" data-provider="${p.id}" ${p.enabled?'':'disabled'}>Continue with ${p.name}${p.enabled?'':'<span class="provider-pending">Coming soon</span>'}</button>`).join('')}</div>${config.emailEnabled!==false?'<div class="auth-divider">OR USE EMAIL</div>':''}
+      ${config.emailEnabled!==false?`<form id="accountForm"><div class="field"><label for="accountEmail">Email</label><input id="accountEmail" type="email" autocomplete="username" required></div><div class="field"><label for="accountPassword">Password</label><input id="accountPassword" type="password" autocomplete="current-password" minlength="8" maxlength="128" required></div><p id="authResult" class="account-message" role="status" aria-live="polite"></p><div class="toolbar section"><button class="button" type="submit">Sign in</button><button class="button secondary create-account" type="button" ${config.emailSignupEnabled===false?'disabled':''}>Create account</button></div><button class="text-button reset-password" type="button">Forgot your password?</button></form>`:''}
+      ${config.emailSignupEnabled===false?'<p class="note">Email sign-in is available for existing password accounts. New email registration will open when email delivery is connected.</p>':''}<p class="note">Guest tracking remains available without signing in. Signing in loads your account workspace; guest work can be copied in afterward.</p>`}`;
     document.body.append(dialog);dialog.showModal();dialog.querySelector('.close-account').onclick=close;
     if(!configured())return;
     if(user){
@@ -94,17 +96,18 @@
       dialog.querySelector('.import-guest').onclick=async()=>{if(!confirm('Replace this account’s workspace with this browser’s guest workspace? Export a backup of the current account first if needed.'))return;adapter.replace(guest());persist(adapter.read());await flush();showAccount();};
       dialog.querySelector('.sign-out').onclick=async()=>{if(dirty&&!(await flush()))return showAccount('Your changes have not synced yet. Export a backup or resolve the sync issue before signing out.');const {error}=await client.auth.signOut({scope:'local'});if(error)return showAccount(error.message);leaveAccount();close();};
     }else{
-      if(config.githubEnabled)dialog.querySelector('.github-signin').onclick=async()=>{
-        const {error}=await client.auth.signInWithOAuth({provider:'github',options:{redirectTo:location.href.split('#')[0]}});
+      dialog.querySelectorAll('.oauth-signin:not(:disabled)').forEach(button=>button.onclick=async()=>{
+        button.disabled=true;
+        const {error}=await client.auth.signInWithOAuth({provider:button.dataset.provider,options:{redirectTo:redirectUrl()}});
         if(error)showAccount(error.message);
-      };
+      });
       const form=dialog.querySelector('form');if(!form)return;const result=dialog.querySelector('#authResult');
       async function authenticate(create){
         if(!form.reportValidity())return;
         const email=form.querySelector('#accountEmail').value.trim(),password=form.querySelector('#accountPassword').value;
         form.querySelectorAll('button').forEach(b=>b.disabled=true);result.textContent=create?'Creating your account…':'Signing in…';
         try{
-          const response=create?await client.auth.signUp({email,password,options:{emailRedirectTo:location.href.split('#')[0]}}):await client.auth.signInWithPassword({email,password});
+          const response=create?await client.auth.signUp({email,password,options:{emailRedirectTo:redirectUrl()}}):await client.auth.signInWithPassword({email,password});
           form.querySelector('#accountPassword').value='';
           if(response.error)throw response.error;
           if(response.data.session){close();await loadAccount(response.data.session);}
@@ -113,10 +116,10 @@
         finally{form.querySelectorAll('button').forEach(b=>b.disabled=false);}
       }
       form.onsubmit=e=>{e.preventDefault();authenticate(false);};form.querySelector('.create-account').onclick=()=>authenticate(true);
-      form.querySelector('.reset-password').onclick=async()=>{const email=form.querySelector('#accountEmail');if(!email.reportValidity())return;const {error}=await client.auth.resetPasswordForEmail(email.value.trim(),{redirectTo:location.href.split('#')[0]});result.textContent=error?error.message:'If an account exists for this email, a password reset link will arrive shortly.';};
+      form.querySelector('.reset-password').onclick=async()=>{const email=form.querySelector('#accountEmail');if(!email.reportValidity())return;const {error}=await client.auth.resetPasswordForEmail(email.value.trim(),{redirectTo:redirectUrl()});result.textContent=error?error.message:'If an account exists for this email, a password reset link will arrive shortly.';};
     }
   }
-  function recovery(){close();const d=document.createElement('dialog');d.id='accountDialog';d.className='account-dialog';d.innerHTML='<h2>Set a new password</h2><form><div class="field"><label for="newAccountPassword">New password</label><input id="newAccountPassword" type="password" autocomplete="new-password" minlength="8" required></div><p class="account-message" role="status"></p><p><button class="button" type="submit">Save password</button></p></form>';document.body.append(d);d.showModal();d.querySelector('form').onsubmit=async e=>{e.preventDefault();const input=d.querySelector('input'),{error}=await client.auth.updateUser({password:input.value});input.value='';if(error)d.querySelector('[role="status"]').textContent=error.message;else{close();showAccount('Password updated.');}};}
+  function recovery(){close();const d=document.createElement('dialog');d.id='accountDialog';d.className='account-dialog';d.innerHTML='<h2>Set a new password</h2><form><div class="field"><label for="newAccountPassword">New password</label><input id="newAccountPassword" type="password" autocomplete="new-password" minlength="8" maxlength="128" required></div><p class="account-message" role="status"></p><p><button class="button" type="submit">Save password</button></p></form>';document.body.append(d);d.showModal();d.querySelector('form').onsubmit=async e=>{e.preventDefault();const input=d.querySelector('input'),{error}=await client.auth.updateUser({password:input.value});input.value='';if(error)d.querySelector('[role="status"]').textContent=error.message;else{close();showAccount('Password updated.');}};}
   async function init(options){
     adapter=options;$('#accountButton').onclick=()=>showAccount();status('Saved in this browser');
     if(!configured())return;
