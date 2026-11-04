@@ -4,3 +4,7 @@
 
 /* Midnight workspace */
 :root{color-scheme:dark}body{background:radial-gradient(ellipse at 85% 0%,#17283a66,transparent 55%),#0b1119}header{background:#101923}.button{color:#102b23}.button.secondary{color:#d3e5ef}.button.danger{color:#ffb4b4}textarea{color:#e0e9f3;background:#101a26;border-color:#334459!important}.card{background:linear-gradient(145deg,#172434,#121c28)}.card,.panel{box-shadow:0 10px 30px #00000018}.card small,.note,.field label,.course-info small,.subject-table small,.unit-progress small{color:#a3b5c6}.eyebrow{color:#8edbb9}.brand small{color:#98adc0}.percent{color:#b6dace}.account-dialog{background:#121c28;color:#e4edf7}.account-dialog::backdrop{background:#050a12b8}.text-button{color:#94e4c2}.auth-providers{display:grid;gap:10px;margin:20px 0}.auth-providers .button{width:100%;padding:13px;font-size:13px}.auth-divider{display:flex;align-items:center;gap:12px;color:#9eb0c3;font-size:11px;margin:22px 0}.auth-divider:before,.auth-divider:after{content:"";height:1px;background:#334459;flex:1}.provider-pending{display:block;margin-top:4px;font-size:10px;font-weight:400}.button:disabled{cursor:not-allowed;opacity:.55}input,select,textarea{accent-color:#8bdfbc}select option{background:#121c28;color:#e0e9f3}
+
+.empty-workspace{padding:30px 16px;max-width:560px}.empty-workspace h2{font-size:25px;margin:12px 0}.empty-workspace .button{margin-top:14px}
+
+a{color:#94e4c2}article p{line-height:1.75;font-size:14px}article h2{margin-top:26px}article h2:first-child{margin-top:0}
