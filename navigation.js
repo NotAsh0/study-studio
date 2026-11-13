@@ -19,6 +19,14 @@
     }
   });
 
+  const book = document.querySelector('#bookLogo');
+  book.addEventListener('click', () => {
+    book.classList.remove('book-startled');
+    void book.offsetWidth;
+    book.classList.add('book-startled');
+  });
+  book.addEventListener('animationend', () => book.classList.remove('book-startled'));
+
   let lastY = window.scrollY;
   window.addEventListener('scroll', () => {
     const y = window.scrollY;
