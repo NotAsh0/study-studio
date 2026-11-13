@@ -1,14 +1,14 @@
 # Vercel and additional login methods
 
-Import NotAsh0/study-studio into Vercel using framework Other, no build command, and repository root as the output directory. Production project: snucstudies. Verified public URL: https://snucstudies.vercel.app/. GitHub sign-in at this origin loads the existing private workspace.
+Import the repository into Vercel using framework **Other**, with the repository root as the output directory and no build command. The production project is `snucstudies` and its public address is [studystudio-tracker.vercel.app](https://studystudio-tracker.vercel.app/).
 
-The production Site URL and exact allowed redirect are https://snucstudies.vercel.app/. When changing domains, add its exact origin plus trailing slash in Supabase Authentication > URL Configuration, preserving the GitHub Pages redirect for existing users. Set Site URL to the new production origin. GitHub's OAuth callback remains https://mkrqngwtgkkemutluhqk.supabase.co/auth/v1/callback.
+In **Supabase → Authentication → URL Configuration**, use `https://studystudio-tracker.vercel.app/` as the Site URL and an allowed redirect. Keep the legacy Vercel and GitHub Pages URLs on the allowlist while they serve the app. For both GitHub and Google, use the callback URL shown by the Supabase provider settings.
 
 ## Google
-Create a Web application OAuth client in Google Auth Platform. Set authorized JavaScript origin to the final Vercel origin and authorized redirect URI to https://mkrqngwtgkkemutluhqk.supabase.co/auth/v1/callback. Configure public production audience (testing mode only permits test users). Enter the client ID and secret directly in Supabase's Google provider, enable and save it. Never commit the secret. After verification, set googleEnabled: true in cloud-config.js. Until then the UI clearly marks Google Coming soon.
+Create a Web application OAuth client in Google Auth Platform. Set the authorized JavaScript origin to the final Vercel origin and the authorized redirect URI to the Supabase callback. Configure a production audience for public access. Enter the client ID and secret directly in Supabase’s Google provider settings and enable the provider. After verification, set `googleEnabled: true` in `cloud-config.js`. Keep the secret in Supabase.
 
 ## Email and password
-Email sign-in and reset UI are prepared. Public registration is intentionally unavailable until an SMTP provider is connected in Supabase Authentication > Emails > SMTP Settings. Keep email confirmation enabled. The built-in mailer does not deliver to arbitrary public users. Supply sender identity and SMTP credentials directly in Supabase; verify confirmation and recovery delivery, then set emailSignupEnabled: true in cloud-config.js. Do not commit SMTP credentials.
+For public registration, connect a custom SMTP provider under **Supabase → Authentication → Emails → SMTP Settings** and keep email confirmation enabled. Supply the sender identity and credentials directly in Supabase. Verify confirmation and password reset delivery, then set `emailSignupEnabled: true` in `cloud-config.js`. Keep SMTP credentials in Supabase.
 
 ## Existing accounts and local work
 The Supabase database and RLS remain unchanged. Existing cloud accounts retain their records. Browser guest data is origin-specific: export from the old address and import at the new address if it was never copied to an account. Users sign in again at the new origin.

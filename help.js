@@ -1,1 +1,48 @@
-function helpPage(){return head('GETTING STARTED','Make Study Studio your own.','A workspace for any course, syllabus or semester.')+`<div class="two"><section class="panel"><h2>1. Create your study space</h2><p class="muted">Sign in with Google, GitHub or email and password to keep your work online. Confirm your email when creating a password account. You can also start as a guest; guest work stays in this browser.</p><p class="muted">New workspaces start with an empty My studies profile. Rename it in Manage workspace, or use the ＋ beside the profile selector to create another semester or course profile.</p><h2>2. Add subjects and syllabus</h2><p class="muted">Use Import curriculum to upload a PDF, Word document or text file, review the detected semesters and edit subjects, units and topics before creating profiles. For manual entry, open Manage workspace → Add course. Enter the subject name, a unique course code and its credits. In Course editor, open that subject, select Add unit, and enter one topic per line. Click Save topics for each unit.</p><p class="muted">Each profile stores its own subjects, units, topics, status labels, grade boundaries and scores. Existing account content stays as you entered it.</p></section><section class="panel"><h2>3. Track your preparation</h2><p class="muted">Open Syllabus tracker and choose a status for each topic. Search or filter to focus on what needs attention. Finished and Exam ready count toward completion; Revision needed appears on the overview.</p><p class="muted">Use Subject overview to compare subjects and inspect unit progress. Customize status labels in Manage workspace.</p><h2>4. Plan your grades</h2><p class="muted">Set default grade boundaries and assessment weights for new profiles in Common settings. In Scores &amp; grades, add each assessment, its maximum mark and its percentage of the final grade. Set your institution’s grade boundaries and grade points. Weights should total 100%.</p><p class="muted">The subject grade point uses your entered assessment average. SGPA weights scored subjects by credits. CGPA also uses the previous credits and CGPA you enter. The target calculator shows the average needed across unentered weight. Predictions are estimates.</p></section></div><section class="section panel"><h2>Save, move and protect your work</h2><p class="muted">For online accounts, wait for “Saved to your account” before leaving. Sign in with the same account on another device to continue. Different login methods can represent different accounts unless the account service links them.</p><p class="muted">Export backups from Manage workspace. To move guest work to your account on the same browser and site address, open My account → Copy guest workspace to my account. This replaces the account workspace after confirmation. To move guest work between site addresses, export at the old address and import at the new one.</p><p class="muted">If a sync conflict appears, export a backup before loading the latest account data. Imports and deletions can replace or remove your work; read the confirmation first.</p><a class="button secondary" href="https://github.com/NotAsh0/study-studio#readme" target="_blank" rel="noopener noreferrer">Open project README ↗</a> <a class="button secondary" href="privacy.html" target="_blank" rel="noopener noreferrer">Privacy &amp; data ↗</a></section>`;}
+function helpPage() {
+  return head(
+    'USER GUIDE',
+    'How to use Study Studio',
+    'Set up your semester, track what you’ve studied and work out what marks you need next.'
+  ) + `
+    <div class="two">
+      <section class="panel">
+        <div class="eyebrow">STEP 1</div>
+        <h2>Set up your workspace</h2>
+        <p class="muted">Choose <strong>Sign in</strong> to save your work across devices. Use Google, GitHub or email and password. If you create an email account, confirm your address before signing in. You can also start as a guest in this browser.</p>
+        <p class="muted">Start in the empty <strong>My studies</strong> profile. Rename it in <strong>Workspace → Manage workspace</strong>, or use the <strong>+</strong> next to the profile selector to create a separate semester or course profile.</p>
+      </section>
+      <section class="panel">
+        <div class="eyebrow">STEP 2</div>
+        <h2>Bring in your syllabus</h2>
+        <p class="muted">Go to <strong>Workspace → Import curriculum</strong> and choose a text-based PDF, DOCX or TXT file up to 20 MB. Review the detected semesters and check course codes, credits, units and topics. <strong>Create semester profiles</strong> adds a new profile for each semester in the preview.</p>
+        <p class="muted">If the preview misses content, correct it before saving. Run OCR first on scanned PDFs. For manual entry, go to <strong>Manage workspace → Add course</strong>, then open the course in <strong>Course editor</strong>, add units and use <strong>Save topics</strong> for each unit.</p>
+      </section>
+      <section class="panel">
+        <div class="eyebrow">STEP 3</div>
+        <h2>Track topics and plan revision</h2>
+        <p class="muted">Open <strong>Study → Syllabus tracker</strong> and choose one status per topic. Search or filter to focus on the topics you want to study. <strong>Finished</strong> and <strong>Exam ready</strong> both count toward completion.</p>
+        <p class="muted">Use <strong>Overview → Review now</strong> to jump into revision when topics are flagged, or open <strong>Study → Subject overview</strong> to compare courses and check progress by unit. Edit status labels in <strong>Manage workspace</strong>.</p>
+      </section>
+      <section class="panel">
+        <div class="eyebrow">STEP 4</div>
+        <h2>Plan your grades</h2>
+        <p class="muted">In <strong>Study → Scores &amp; grades</strong>, select a course and enter the score, maximum mark and final grade weight for each assessment. Leave unknown marks blank. Check your institution’s grade boundaries and make sure the planned weights add up to 100%.</p>
+        <ul class="muted">
+          <li><strong>Predicted subject grade point</strong> uses the selected course’s weighted average so far.</li>
+          <li><strong>Predicted SGPA</strong> combines eligible scored courses by credit. <strong>Predicted CGPA</strong> also uses the previous credits and CGPA you enter.</li>
+          <li><strong>Target grade calculator</strong> shows the average needed across all unentered weight. If only the final exam remains, that’s the percentage you need on that exam.</li>
+        </ul>
+        <p class="note">Predictions assume your assessed average continues. Use practical estimates only for what-if scenarios.</p>
+      </section>
+    </div>
+    <section class="section panel">
+      <h2>Defaults, sync and backups</h2>
+      <p class="muted"><strong>Common settings.</strong> Set default grade boundaries for new profiles and assessment weights for new courses. To use the defaults in the current profile, use the apply buttons. Applying grade defaults replaces that profile’s boundaries. Applying assessment defaults fills courses that have no assessments.</p>
+      <p class="muted"><strong>Sync.</strong> Wait for <strong>Saved to your account</strong> before leaving. Sign in with the same account on another device. If a sync conflict appears, export a backup before choosing <strong>Load latest account data</strong>.</p>
+      <p class="muted"><strong>Backups.</strong> Export or import a JSON backup in <strong>Manage workspace</strong>. Guest work stays in its original browser and site address. To move it between site addresses, export it at the old address and import it at the new one. Importing a backup or choosing <strong>My account → Copy guest workspace to my account</strong> replaces the destination workspace after confirmation.</p>
+      <div class="toolbar">
+        <a class="button secondary" href="https://github.com/NotAsh0/study-studio#readme" target="_blank" rel="noopener noreferrer">Project on GitHub ↗</a>
+        <a class="button secondary" href="privacy.html" target="_blank" rel="noopener noreferrer">Privacy &amp; data ↗</a>
+      </div>
+    </section>`;
+}

@@ -1,36 +1,53 @@
-# Study Studio
+<p align="center"><img src="book-still.png" width="68" height="68" alt=""></p>
+<h1 align="center">Study Studio</h1>
+<p align="center">A study workspace for tracking your syllabus, planning revision and projecting grades.</p>
+<p align="center">
+  <a href="https://studystudio-tracker.vercel.app/"><strong>Open Study Studio</strong></a>
+  · <a href="#quick-start">Quick start</a>
+  · <a href="https://studystudio-tracker.vercel.app/privacy.html">Privacy &amp; data</a>
+</p>
 
-Live app: https://snucstudies.vercel.app/
+![Study Studio dashboard with a sample semester, topic progress and a course list](docs/images/dashboard.png)
 
-A dark study workspace for any course or semester. New users start with an empty profile and build their own syllabus. Existing workspaces are preserved.
+## What you can do
 
-## How to use
-1. Sign in with Google, GitHub, or email and password. New password accounts must confirm their email. Guest work stays in the current browser.
-2. Rename My studies in Manage workspace, or create another profile with the + beside the profile selector.
-3. Choose Manage workspace > Add course. Enter a subject name, unique code and credits.
-4. Open the subject in Course editor, add units, enter one topic per line and click Save topics.
-5. Set topic statuses in Syllabus tracker. Subject overview compares subjects and unit progress. Finished and Exam ready count towards completion. Customize labels in Manage workspace.
-6. In Scores & grades, add assessments, maximum marks and final-grade weights. Set the grade boundaries and grade points used by your institution. Enter previous credits and CGPA for cumulative predictions.
-7. Wait for Saved to your account before leaving. Export backups from Manage workspace.
+| Feature | How it helps |
+| --- | --- |
+| **Semester profiles** | Keep each semester’s courses, units, topics, progress and scores together. Start with a blank workspace for any program. |
+| **Curriculum import** | Extract a draft from a PDF, DOCX or TXT file, review it, and create one profile per detected semester. |
+| **Progress and revision** | Track a status for each topic, see how your subjects compare and jump into topics marked for revision. |
+| **Grade planning** | Enter weighted assessments to project subject grade points, SGPA and CGPA. Calculate the average needed on remaining assessments to reach a target. |
+| **Private sync and backups** | Sign in with Google, GitHub or email to resume on another device. Export a JSON backup at any time. |
 
-## Import curriculum and shared defaults
+## Quick start
 
-Open Import curriculum and choose a text-based PDF, DOCX or TXT file. The document is processed in your browser. The importer recognises the college's semester overview tables and matches subjects to detailed syllabus headings, including wrapped titles and practical experiments. It keeps subjects even when their detailed syllabus is absent. Automatically generated codes are placeholders: review all names, codes, credits, units and topics and add or correct missing items before creating profiles. Detection depends on the document layout; scanned PDFs require OCR first, and no automatic parser supports every format perfectly. Each imported semester creates a new profile and leaves existing profiles untouched.
+1. **Open the app.** Sign in to sync your workspace, or start as a guest in your browser. Confirm your email if you create an email and password account.
+2. **Add your syllabus.** Use **Workspace → Import curriculum** and review the proposed courses, credits, units and topics before saving. To enter them yourself, use **Workspace → Manage workspace → Add course**, then add units and topics in **Course editor**.
+3. **Track your progress.** Open **Study → Syllabus tracker** to update individual topics. **Finished** and **Exam ready** count toward completion. Open **Subject overview** to compare courses and check progress by unit.
+4. **Plan your marks.** In **Study → Scores & grades**, enter each assessment’s score, maximum and weight. Set your grade boundaries, then use the **Target grade calculator** or enter previous credits and CGPA for a cumulative projection.
 
-In Common settings, enter default grade boundaries and assessment weights for newly created profiles and subjects. Defaults are saved in the current workspace and sync with your account. Existing grades, subjects and scores are not rewritten.
+Open **How to use** in the top navigation for the complete guide, including defaults, syncing and moving guest work.
 
-## Accounts and saved content
-Each account stores its full workspace: profiles, subjects, units, topics, custom status labels, assessment scores, grade boundaries and previous credit history. Supabase row-level security restricts records to their owner; revision checks prevent stale edits overwriting newer saves. The same signed-in account can resume its saved workspace on another device.
+## Import and grade estimates
 
-Guest data is local to one browser and site origin. To upload it, choose My account > Copy guest workspace to my account; this replaces existing account profiles after confirmation. To move guest work between site URLs, export a backup at the old address and import at the new one.
+The importer processes files up to 20 MB in your browser. Run OCR on image-only PDFs first. Results depend on the document layout, so check any generated course codes and credits, and fill in missing units before creating profiles.
 
-Predicted subject points, SGPA, CGPA and target marks are estimates, not official results. Configure your own grading rules and assessment weights.
+Grade projections extend your current weighted average across remaining course weight. SGPA uses credit-weighted predictions for eligible scored courses. CGPA adds the previous credits and CGPA you enter. The target calculator shows the average needed across all unentered weight. If the final exam is the only unentered assessment, that average is the percentage needed on that exam. Follow your institution’s published grading and exam rules for official results.
 
-## Hosting and maintenance
-The repository root is a static HTML/CSS/JavaScript app. Vercel imports NotAsh0/study-studio, framework Other, with no build command; pushes to main trigger deployment. GitHub Pages remains available as a secondary URL.
+## Run locally
 
-- [Backend and private storage setup](backend/README.md)
-- [Vercel and additional sign-in setup](backend/VERCEL-AND-LOGIN.md)
-- [Privacy and data](https://snucstudies.vercel.app/privacy.html)
+The app uses static HTML, CSS and JavaScript. Serve the repository root with a local HTTP server. For example, with Python 3 installed:
 
-Only public Supabase client configuration belongs in cloud-config.js. Never commit service-role keys, OAuth client secrets, SMTP keys, passwords, or user workspace exports. No database migration is needed for users to add subjects and topics.
+```sh
+git clone https://github.com/NotAsh0/study-studio.git
+cd study-studio
+python -m http.server 4173 --bind 127.0.0.1
+```
+
+Open [http://127.0.0.1:4173/](http://127.0.0.1:4173/). Guest mode works locally. For your own deployment with account sync, configure a Supabase project and allow the local URL in its authentication settings.
+
+- [Supabase setup and storage](backend/README.md)
+- [Vercel deployment and sign-in setup](backend/VERCEL-AND-LOGIN.md)
+- Run the curriculum importer checks with `node tests/curriculum-import.cjs`.
+
+For bugs or feature requests, use [GitHub Issues](https://github.com/NotAsh0/study-studio/issues). If an import fails, describe the document format and share a redacted example of the layout.
