@@ -1,5 +1,5 @@
 // Imports are parsed locally; the editable preview is the only source used when saving.
-function parseCurriculum(text){
+function parseGenericCurriculum(text){
  const lines=text.replace(/\r/g,'').replace(/\u00a0/g,' ').split('\n').map(x=>x.trim()).filter(Boolean);
  const semesters=[];let semester=null,course=null,unit=null,ignore=false;
  const semRE=/^(?:semester|sem)\s*[-.:]?\s*(\d{1,2}|[IVX]{1,5})\b/i;
@@ -18,12 +18,51 @@ function parseCurriculum(text){
   if(!course)continue;m=l.match(unitRE);if(m){let name=('Unit '+m[1]+' '+m[2].replace(/\(\s*\d+\s*(?:hours?|hrs?)\s*\)/ig,'').trim()).trim();unit={name,topics:[]};course.units.push(unit);ignore=false;continue}
   if(stopRE.test(l)){ignore=true;unit=null;continue}if(unit&&!ignore&&!/^(?:page\s*\d+|\d+\s*(?:hours?|hrs?))$/i.test(l))unit.topics.push(...topics(l));
  }
- return semesters.map(s=>({...s,courses:s.courses.filter(c=>c.units.some(u=>u.topics.length))})).filter(s=>s.courses.length);
+ return semesters.filter(s=>s.courses.length);
+}
+// Overview tables can omit course codes and precede the detailed syllabi.
+function parseCurriculum(text){
+ const lines=text.replace(/\r/g,'').replace(/\u00a0/g,' ').split('\n').map(x=>x.trim()).filter(Boolean);
+ const norm=s=>s.toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+ const semRE=/^(?:semester|sem)\s*[-.:]?\s*(\d{1,2}|[IVX]{1,5})\b/i;
+ const roman={I:1,II:2,III:3,IV:4,V:5,VI:6,VII:7,VIII:8,IX:9,X:10};
+ const semesters=[],pending=[];let table=null,syllabus=false,sem=null,course=null,unit=null,recent=[],heading=false;
+ const getSem=n=>{n=roman[n.toUpperCase()]||Number(n);let s=semesters.find(x=>x.name==='Semester '+n);if(!s){s={name:'Semester '+n,courses:[]};semesters.push(s)}return s};
+ for(const raw of lines){
+  const line=raw.replace(/\s+/g,' ').trim(),sm=line.match(semRE);
+  if(/^syllabus\s*$/i.test(line)){syllabus=true;pending.length=0;table=null;continue}
+  if(!syllabus&&/^course summary\b/i.test(line)){table=null;pending.length=0;continue}
+  if(sm&&line.length<45){sem=getSem(sm[1]);course=null;unit=null;if(!syllabus)pending.push(sem);continue}
+  if(!syllabus){
+   if(/^course title\b/i.test(line)&&pending.length){table=pending.shift();continue}
+   if(table&&/^total\b/i.test(line)){table=null;continue}
+   if(table){
+    const row=line.match(/^\d+\s+(.+?)\s+([A-Z]{2,5})\s+(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)(?:\*|\s|$)/);
+    if(row){let name=row[1].trim().replace(/\s*\*$/,'');if(!table.courses.some(c=>norm(c.name)===norm(name)))table.courses.push({name,code:'S'+table.name.split(' ')[1]+'-'+String(table.courses.length+1).padStart(2,'0'),credits:+row[7],units:[]})}
+   }
+   continue;
+  }
+  if(!sem)continue;
+  if(/^code$/i.test(line)&&/^course$/i.test(recent[recent.length-1]||'')){course=null;unit=null;heading=true;recent=[]}
+  if(/^L\s+T\s+P\s+C\b/i.test(line))heading=false;
+  recent.push(line);if(recent.length>4)recent.shift();
+  let header=norm(recent.join(' '));
+  let match=sem.courses.find(c=>norm(c.name)===norm(line)||(heading&&header.includes(norm(c.name))));
+  if(match){course=match;unit=null;continue}
+  if(!course)continue;
+  let um=line.match(/^(?:unit|module)\s*[-.:]?\s*(\d{1,2}|[IVX]{1,5})\b\s*[-.:–—]?\s*(.*)$/i);
+  if(um){unit={name:('Unit '+um[1]+' '+um[2].replace(/\(\s*\d+\s*(?:hours?|hrs?)\s*\)/ig,'')).trim(),topics:[]};course.units.push(unit);continue}
+  if(/^(?:(?:tentative\s+)?list of|suggested) experiments\s*:?\s*$/i.test(line)){unit={name:'Practical experiments',topics:[]};course.units.push(unit);continue}
+  if(/^(?:text\s*books?|reference\s*books?|references|course\s+outcomes?|learning\s+outcomes?|assessment|total\s+(?:hours|periods))\b/i.test(line)){unit=null;continue}
+  if(unit&&!/^Shiv Nadar University Chennai\s*[–-]/i.test(line))unit.topics.push(...line.split(/\s+[–—-]\s+|;/).map(x=>x.trim().replace(/^\d+[.)]\s*/,'' )).filter(x=>x.length>2));
+ }
+ const found=semesters.filter(s=>s.courses.length);
+ return found.length?found:parseGenericCurriculum(text);
 }
 async function readCurriculum(file){if(file.size>20*1024*1024)throw Error('Choose a file smaller than 20 MB.');let ext=file.name.split('.').pop().toLowerCase();if(ext==='txt')return file.text();if(ext==='docx'){if(!window.mammoth)throw Error('Document reader did not load.');return (await mammoth.extractRawText({arrayBuffer:await file.arrayBuffer()})).value}if(ext==='pdf'){const pdfjs=await import('./vendor/pdf.min.mjs');pdfjs.GlobalWorkerOptions.workerSrc='./vendor/pdf.worker.min.mjs';const doc=await pdfjs.getDocument({data:await file.arrayBuffer()}).promise;let out=[];for(let n=1;n<=doc.numPages;n++){let page=await doc.getPage(n),content=await page.getTextContent(),lastY=null,line='';for(const item of content.items){if(!item.str)continue;let y=item.transform[5];if(lastY!==null&&Math.abs(y-lastY)>3){out.push(line);line=''}line+=(line?' ':'')+item.str;lastY=y;if(item.hasEOL){out.push(line);line='';lastY=null}}if(line)out.push(line)}return out.join('\n')}throw Error('Choose a PDF, DOCX or TXT file.');}
 function commonDefaults(){return db.commonDefaults||{rules:structuredClone(confirmedGradeRules),assessments:[]}}
 function commonPage(){let d=commonDefaults();return head('WORKSPACE DEFAULTS','Common settings','Defaults are used for newly created profiles and subjects. Existing scores and grade rules stay as they are.')+`<div class="two"><section class="panel"><h2>Default grade boundaries</h2><p class="muted">One per line: grade, minimum percentage, grade points.</p><textarea id="defaultRules" rows="9" style="width:100%;padding:12px">${esc(d.rules.map(r=>[r.grade,r.min,r.points].join(', ')).join('\n'))}</textarea></section><section class="panel"><h2>Default assessment weights</h2><p class="muted">One per line: assessment name, weight %, maximum mark. Leave empty to add assessments manually. Weights should total 100%.</p><textarea id="defaultTests" rows="9" style="width:100%;padding:12px">${esc(d.assessments.map(r=>[r.name,r.weight,r.max].join(', ')).join('\n'))}</textarea></section></div><p><button class="button" id="saveDefaults">Save defaults</button></p><p><button class="button secondary" id="applyDefaultRules">Apply saved grade defaults to current profile</button> <button class="button secondary" id="applyDefaultTests">Add saved assessments to subjects without assessments</button></p><p class="note">These actions affect only the selected profile. Assessments and grades already entered are never deleted.</p><p class="note" id="defaultsMessage" role="status"></p>`}
-function importPage(){return head('CURRICULUM IMPORT','Import your syllabus','Upload a curriculum and review the extracted semesters before saving.')+`<section class="panel"><h2>Upload curriculum</h2><p class="muted">PDF, DOCX or TXT · up to 20 MB. Text is read on this device. Scanned PDFs need OCR first. Look for semester, course code and unit headings.</p><input type="file" id="curriculumFile" accept=".pdf,.docx,.txt"><p id="importMessage" class="note" role="status"></p><div id="importReview" hidden><h2>Review and correct</h2><p class="muted">Edit the proposed subjects and topics below. Check course names, codes, credits, units and topics. Each semester creates a new profile; existing profiles are not changed. Credits default to 0 when they cannot be identified.</p><div id="reviewFields"></div><p><button class="button" id="confirmImport">Create semester profiles</button></p></div></section>`}
+function importPage(){return head('CURRICULUM IMPORT','Import your syllabus','Upload a curriculum and review the extracted semesters before saving.')+`<section class="panel"><h2>Upload curriculum</h2><p class="muted">PDF, DOCX or TXT · up to 20 MB. Text is read on this device. Scanned PDFs need OCR first. Semester tables and unit headings are detected where possible. Scanned files need OCR first.</p><input type="file" id="curriculumFile" accept=".pdf,.docx,.txt"><p id="importMessage" class="note" role="status"></p><div id="importReview" hidden><h2>Review and correct</h2><p class="muted">Edit the proposed subjects and topics below. Check course names, codes, credits, units and topics. Each semester creates a new profile; existing profiles are not changed. Subjects without detailed units are kept. Generated codes and all credits need checking; unknown credits default to 0.</p><div id="reviewFields"></div><p><button class="button" id="confirmImport">Create semester profiles</button></p></div></section>`}
 function bindExtras(){let f=$('#curriculumFile');if(f)f.onchange=async()=>{let msg=$('#importMessage');try{msg.textContent='Reading curriculum…';let t=await readCurriculum(f.files[0]),a=parseCurriculum(t);if(!a.length)throw Error('No structured courses found. Try a text-based file with semester, course code and unit headings.');renderImportReview(a);$('#importReview').hidden=false;msg.textContent=`Found ${a.length} semester(s) and ${a.reduce((n,s)=>n+s.courses.length,0)} subjects. Review before saving.`}catch(e){$('#importReview').hidden=true;msg.textContent=e.message}};
  let b=$('#confirmImport');if(b)b.onclick=()=>{try{let a=readImportReview();if(!Array.isArray(a)||!a.length||db.profiles.length+a.length>=100)throw Error('Enter a valid nonempty list of semesters (maximum 99 profiles total).');let created=a.map(s=>{if(!s||typeof s.name!=='string'||!s.name.trim()||!Array.isArray(s.courses)||!s.courses.length)throw Error('Each semester needs a name and at least one course.');let p=fresh(s.name.trim()),seen=new Set();p.courses=s.courses.map(c=>{if(!c||typeof c.name!=='string'||!c.name.trim()||typeof c.code!=='string'||!c.code.trim()||seen.has(c.code.trim())||!Number.isFinite(+c.credits)||+c.credits<0||!Array.isArray(c.units))throw Error('Each course needs a unique code, name, nonnegative credits, and units.');seen.add(c.code.trim());return {name:c.name.trim(),code:c.code.trim(),credits:+c.credits,excluded:false,units:c.units.map(u=>{if(typeof u.name!=='string'||!Array.isArray(u.topics)||u.topics.some(t=>typeof t!=='string'))throw Error('Each unit needs a name and a list of topics.');return {name:u.name,topics:u.topics.filter(t=>t.trim())}})}});for(const c of p.courses)p.scores[c.code]=structuredClone(commonDefaults().assessments);return p});db.profiles.push(...created);db.active=created[0].id;selected=0;page='subjects';save();render()}catch(e){$('#importMessage').textContent='Could not import: '+e.message}};
  let applyRules=$('#applyDefaultRules');if(applyRules)applyRules.onclick=()=>{if(!confirm('Replace the selected profile’s grade boundaries with the saved defaults? Scores and other profiles will stay unchanged.'))return;profile().rules=structuredClone(commonDefaults().rules);save();$('#defaultsMessage').textContent='Grade defaults applied to this profile.'};let applyTests=$('#applyDefaultTests');if(applyTests)applyTests.onclick=()=>{let d=commonDefaults().assessments;if(!d.length){$('#defaultsMessage').textContent='Save at least one assessment default first.';return}let p=profile(),n=0;for(const c of p.courses)if(!p.scores[c.code]?.length){p.scores[c.code]=structuredClone(d);n++}save();$('#defaultsMessage').textContent='Added defaults to '+n+' subjects without assessments.'};

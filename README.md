@@ -15,7 +15,7 @@ A dark study workspace for any course or semester. New users start with an empty
 
 ## Import curriculum and shared defaults
 
-Open Import curriculum and choose a text-based PDF, DOCX or TXT file. The document is processed in your browser. Review the detected semesters, subjects, course codes, credits, units and topics, and edit or add missing items before creating profiles. Detection depends on the document layout; scanned PDFs require OCR first. Each imported semester creates a new profile and leaves existing profiles untouched.
+Open Import curriculum and choose a text-based PDF, DOCX or TXT file. The document is processed in your browser. The importer recognises the college's semester overview tables and matches subjects to detailed syllabus headings, including wrapped titles and practical experiments. It keeps subjects even when their detailed syllabus is absent. Automatically generated codes are placeholders: review all names, codes, credits, units and topics and add or correct missing items before creating profiles. Detection depends on the document layout; scanned PDFs require OCR first, and no automatic parser supports every format perfectly. Each imported semester creates a new profile and leaves existing profiles untouched.
 
 In Common settings, enter default grade boundaries and assessment weights for newly created profiles and subjects. Defaults are saved in the current workspace and sync with your account. Existing grades, subjects and scores are not rewritten.
 
