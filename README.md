@@ -13,6 +13,12 @@ A dark study workspace for any course or semester. New users start with an empty
 6. In Scores & grades, add assessments, maximum marks and final-grade weights. Set the grade boundaries and grade points used by your institution. Enter previous credits and CGPA for cumulative predictions.
 7. Wait for Saved to your account before leaving. Export backups from Manage workspace.
 
+## Import curriculum and shared defaults
+
+Open Import curriculum and choose a text-based PDF, DOCX or TXT file. The document is processed in your browser. Review the detected semesters, subjects, course codes, credits, units and topics, and edit or add missing items before creating profiles. Detection depends on the document layout; scanned PDFs require OCR first. Each imported semester creates a new profile and leaves existing profiles untouched.
+
+In Common settings, enter default grade boundaries and assessment weights for newly created profiles and subjects. Defaults are saved in the current workspace and sync with your account. Existing grades, subjects and scores are not rewritten.
+
 ## Accounts and saved content
 Each account stores its full workspace: profiles, subjects, units, topics, custom status labels, assessment scores, grade boundaries and previous credit history. Supabase row-level security restricts records to their owner; revision checks prevent stale edits overwriting newer saves. The same signed-in account can resume its saved workspace on another device.
 
