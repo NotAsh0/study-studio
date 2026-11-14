@@ -111,12 +111,12 @@
           form.querySelector('#accountPassword').value='';
           if(response.error)throw response.error;
           if(response.data.session){close();await loadAccount(response.data.session);}
-          else result.textContent='Check your email to confirm your account, then return here to sign in.';
+          else result.textContent='Check your email to confirm your account, then return here to sign in. If you don’t see the email, check your spam or junk folder.';
         }catch(error){result.textContent=error.message||'Sign-in failed. Please try again.';}
         finally{form.querySelectorAll('button').forEach(b=>b.disabled=false);}
       }
       form.onsubmit=e=>{e.preventDefault();authenticate(false);};form.querySelector('.create-account').onclick=()=>authenticate(true);
-      form.querySelector('.reset-password').onclick=async()=>{const email=form.querySelector('#accountEmail');if(!email.reportValidity())return;const {error}=await client.auth.resetPasswordForEmail(email.value.trim(),{redirectTo:redirectUrl()});result.textContent=error?error.message:'If an account exists for this email, a password reset link will arrive shortly.';};
+      form.querySelector('.reset-password').onclick=async()=>{const email=form.querySelector('#accountEmail');if(!email.reportValidity())return;const {error}=await client.auth.resetPasswordForEmail(email.value.trim(),{redirectTo:redirectUrl()});result.textContent=error?error.message:'If an account exists for this email, a password reset link will arrive shortly. Check your spam or junk folder if you don’t see it.';};
     }
   }
   function recovery(){close();const d=document.createElement('dialog');d.id='accountDialog';d.className='account-dialog';d.innerHTML='<h2>Set a new password</h2><form><div class="field"><label for="newAccountPassword">New password</label><input id="newAccountPassword" type="password" autocomplete="new-password" minlength="8" maxlength="128" required></div><p class="account-message" role="status"></p><p><button class="button" type="submit">Save password</button></p></form>';document.body.append(d);d.showModal();d.querySelector('form').onsubmit=async e=>{e.preventDefault();const input=d.querySelector('input'),{error}=await client.auth.updateUser({password:input.value});input.value='';if(error)d.querySelector('[role="status"]').textContent=error.message;else{close();showAccount('Password updated.');}};}

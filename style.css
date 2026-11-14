@@ -61,3 +61,11 @@ select,input,textarea{color:#f6eae5;background:#1b1818;border:1px solid #51403c;
 .book-logo{border:0;padding:0;overflow:hidden;cursor:pointer;position:relative;isolation:isolate}.book-logo picture,.book-logo img{display:block;width:100%;height:100%}.book-logo img{object-fit:cover}.book-logo:hover{filter:brightness(1.1)}.book-logo.book-startled{animation:book-react 1.2s cubic-bezier(.2,.7,.25,1)}@keyframes book-react{0%,100%{transform:translateY(0) rotate(0) scale(1)}10%{transform:translateY(-6px) rotate(-13deg) scale(1.12)}20%{transform:translateY(1px) rotate(11deg) scale(.96)}32%{transform:translateY(-4px) rotate(-8deg) scale(1.06)}46%{transform:translateY(0) rotate(6deg)}63%{transform:translateY(-2px) rotate(-3deg)}80%{transform:translateY(0) rotate(2deg)}}
 @media(max-width:650px){.sectionhead:has(.course-sort){flex-wrap:wrap}.course-sort{margin-left:auto}.course-list .course,.course-list .course:last-child{padding:13px 10px}.next-chip{max-width:min(220px,100%)}}
 @media(prefers-reduced-motion:reduce){.book-logo.book-startled{animation:none}.nav-group summary .nav-chevron{transition:none}}
+
+/* Account sync status bubble */
+.account-status-wrap{position:relative;flex:none}
+.account-status-wrap .save-indicator{position:absolute;z-index:30;top:calc(100% + 8px);right:0;display:flex;visibility:hidden;opacity:0;width:max-content;max-width:min(280px,calc(100vw - 24px));padding:12px 14px;border:1px solid #67453c;border-radius:10px;background:#211b1a;box-shadow:0 12px 30px #0008;color:#eadbd5;font-size:12px;line-height:1.5;transition:opacity .15s;pointer-events:none}
+.account-status-wrap:hover .save-indicator,.account-status-wrap:focus-within .save-indicator{visibility:visible;opacity:1}
+.account-status-wrap .save-indicator strong{display:block;max-width:100%;white-space:normal;overflow-wrap:anywhere;color:#fff3eb}
+.account-status-wrap .save-indicator>span{white-space:normal;overflow-wrap:anywhere}
+.account-status-wrap .dot{display:inline-block}

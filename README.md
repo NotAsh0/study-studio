@@ -51,3 +51,7 @@ Open [http://127.0.0.1:4173/](http://127.0.0.1:4173/). Guest mode works locally.
 - Run the curriculum importer checks with `node tests/curriculum-import.cjs`.
 
 For bugs or feature requests, use [GitHub Issues](https://github.com/NotAsh0/study-studio/issues). If an import fails, describe the document format and share a redacted example of the layout.
+
+## Development insights
+
+[Explore the app architecture and functionality](docs/DEVELOPMENT.md), including account sync, curriculum import and grade projections.
