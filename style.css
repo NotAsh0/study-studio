@@ -92,3 +92,19 @@ select,input,textarea{color:#f6eae5;background:#1b1818;border:1px solid #51403c;
 .course-chip,.course-info small,.course-sort,.card .label,.field label,.subject-table th,.unit-progress small{font-size:12px}
 .topnav .nav,.nav-group summary{font-size:13px}
 @media(max-width:650px){.topnav .nav,.nav-group summary{font-size:12px}.add-course-form .fields{grid-template-columns:1fr}}
+
+/* Typography and surface refinement */
+@font-face{font-family:'DM Sans';font-style:normal;font-weight:400 700;font-display:swap;src:url('fonts/dm-sans-latin.woff2') format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'DM Sans';font-style:normal;font-weight:400 700;font-display:swap;src:url('fonts/dm-sans-latin-ext.woff2') format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C4,U+2113,U+2C60-2C7F,U+A720-A7FF}
+:root{font-family:'DM Sans',Segoe UI,sans-serif}
+body{background:linear-gradient(155deg,#111112 0%,#171312 100%);background-attachment:fixed}
+body:before{content:none}
+.card,.panel{background:#1d1b1b;border:1px solid #383232;box-shadow:none}
+.course-list .course,.course-list .course:last-child{background:#1d1b1b;border-color:#383232;box-shadow:none}
+.course-list .course:hover,.course-list .course:focus-visible{background:#30221f;border-color:#8e503d}
+.topbar{filter:drop-shadow(0 4px 10px #0003)}
+.brand{box-shadow:none}
+.button{box-shadow:none}
+h1{letter-spacing:-.035em}
+.metric-ready{background:#1d2420;border-color:#405348}
+.metric-revision{background:#292019;border-color:#6c4935}
