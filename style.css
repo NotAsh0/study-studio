@@ -166,3 +166,12 @@ h1{letter-spacing:-.035em}
   .subject-table td:last-child{display:block}
   .subject-table td:last-child button{width:100%}
 }
+
+@media(max-width:650px){
+  .sync-indicator #syncSummary{display:inline}
+  .sync-indicator{font-size:11px}
+  .mobile-more[open]>summary:after{content:none}
+  .course-dialog{width:min(94vw,490px)}
+  .course-dialog input:not([type="checkbox"]){width:100%}
+  .course-dialog input[type="checkbox"]{width:22px;min-height:22px;vertical-align:middle}
+}

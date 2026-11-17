@@ -9,7 +9,7 @@ function subjectSummary(p,c){
 }
 function subjectOverview(p){
   const c=p.courses[selected];
-  if(!c)return head('SUBJECTS','Subject-wise overview','Add a course in Manage workspace to get started.');
+  if(!c)return emptyCourses('SUBJECTS','Subject-wise overview');
   const summary=subjectSummary(p,c);
   return head('SUBJECTS','Subject-wise overview','Compare preparation and performance, then focus on one subject.')+`
     <div class="panel table-panel"><div class="table-scroll"><table class="subject-table"><thead><tr><th>Subject</th><th>Progress</th><th>Notes complete</th><th>Revision needed</th><th>Exam ready</th><th>Predicted grade</th><th></th></tr></thead><tbody>
