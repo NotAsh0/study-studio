@@ -19,6 +19,25 @@
     }
   });
 
+  const mobileNav = document.querySelector('.mobile-nav');
+  const mobileMore = document.querySelector('.mobile-more');
+  mobileNav.addEventListener('click', event => {
+    const button = event.target.closest('[data-mobile-page]');
+    if (!button) return;
+    mobileMore.open = false;
+    document.querySelector('.topnav .nav[data-page="' + button.dataset.mobilePage + '"]').click();
+    window.scrollTo({top: 0, behavior: 'instant'});
+  });
+  document.addEventListener('click', event => {
+    if (!event.target.closest('.mobile-more')) mobileMore.open = false;
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && mobileMore.open) {
+      mobileMore.open = false;
+      mobileMore.querySelector('summary').focus();
+    }
+  });
+
   const book = document.querySelector('#bookLogo');
   book.addEventListener('click', () => {
     book.classList.remove('book-startled');

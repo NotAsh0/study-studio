@@ -8,7 +8,7 @@ function helpPage() {
       <section class="panel">
         <div class="eyebrow">STEP 1</div>
         <h2>Set up your workspace</h2>
-        <p class="muted">Choose <strong>Sign in</strong> to save your work across devices. Use Google, GitHub or email and password. If you create an email account, confirm your address before signing in. You can also start as a guest in this browser.</p>
+        <p class="muted">On a phone, use the bottom navigation to open your syllabus, grades and workspace. Tap <strong>More</strong> for subject overview, import, settings and help. Choose <strong>Sign in</strong> to save your work across devices. Use Google, GitHub or email and password. If you create an email account, confirm your address before signing in. You can also start as a guest in this browser.</p>
         <p class="muted">Start in the empty <strong>My studies</strong> profile. Rename it in <strong>Workspace → Manage workspace</strong>, or use the <strong>+</strong> next to the profile selector to create a separate semester or course profile.</p>
       </section>
       <section class="panel">
