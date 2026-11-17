@@ -84,3 +84,11 @@ select,input,textarea{color:#f6eae5;background:#1b1818;border:1px solid #51403c;
 @media(max-width:650px){.account-status-wrap{gap:4px}.sync-indicator{padding:8px 6px;font-size:10px}.empty-start{padding:22px}.empty-start .toolbar{flex-direction:column;align-items:stretch}}
 
 @media(max-width:650px){.sync-indicator #syncSummary{display:none}[data-sync="warning"] .sync-indicator #syncSummary{display:inline}}
+
+/* Readable workspace labels and course entry */
+.add-course-form{margin-top:16px;max-width:900px}
+.add-course-form[hidden]{display:none}
+.add-course-form .toolbar{margin-top:16px;margin-bottom:0}
+.course-chip,.course-info small,.course-sort,.card .label,.field label,.subject-table th,.unit-progress small{font-size:12px}
+.topnav .nav,.nav-group summary{font-size:13px}
+@media(max-width:650px){.topnav .nav,.nav-group summary{font-size:12px}.add-course-form .fields{grid-template-columns:1fr}}
