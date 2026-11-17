@@ -69,3 +69,18 @@ select,input,textarea{color:#f6eae5;background:#1b1818;border:1px solid #51403c;
 .account-status-wrap .save-indicator strong{display:block;max-width:100%;white-space:normal;overflow-wrap:anywhere;color:#fff3eb}
 .account-status-wrap .save-indicator>span{white-space:normal;overflow-wrap:anywhere}
 .account-status-wrap .dot{display:inline-block}
+
+/* Persistent sync status and empty workspace */
+.account-status-wrap{display:flex;align-items:center;gap:8px}
+.sync-indicator{display:inline-flex;align-items:center;gap:6px;padding:7px 8px;border:1px solid #51403a;border-radius:8px;background:#211b1a;color:#dfd1ca;font-size:11px;white-space:nowrap;cursor:pointer}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:#b6a7a1}
+[data-sync="saved"] .sync-dot{background:#9ac7a4}
+[data-sync="pending"] .sync-dot{background:#ffb46e}
+[data-sync="warning"] .sync-indicator{color:#fff2dc;border-color:#d5914d;background:#59321d;font-weight:700}
+[data-sync="warning"] .sync-dot{background:#ffb45e}
+.account-status-wrap .save-indicator{pointer-events:auto}
+.empty-start{max-width:720px;padding:32px}
+.empty-start .toolbar{margin:22px 0 0}
+@media(max-width:650px){.account-status-wrap{gap:4px}.sync-indicator{padding:8px 6px;font-size:10px}.empty-start{padding:22px}.empty-start .toolbar{flex-direction:column;align-items:stretch}}
+
+@media(max-width:650px){.sync-indicator #syncSummary{display:none}[data-sync="warning"] .sync-indicator #syncSummary{display:inline}}

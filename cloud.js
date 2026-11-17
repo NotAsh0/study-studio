@@ -13,7 +13,7 @@
     try{return JSON.parse(atob(config.publishableKey.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).role==='anon';}catch{return false;}
   }
   function validWorkspace(v){return v&&v.version===1&&Array.isArray(v.profiles)&&v.profiles.length>0&&v.profiles.length<100&&v.profiles.every(p=>p&&typeof p.id==='string'&&typeof p.name==='string'&&Array.isArray(p.courses)&&Array.isArray(p.statuses)&&p.statuses.length&&p.statuses.every(s=>typeof s==='string')&&p.progress&&typeof p.progress==='object'&&p.scores&&typeof p.scores==='object'&&Array.isArray(p.rules)&&p.courses.every(c=>c&&typeof c.code==='string'&&typeof c.name==='string'&&Number.isFinite(+c.credits)&&Array.isArray(c.units)&&c.units.every(u=>u&&typeof u.name==='string'&&Array.isArray(u.topics)&&u.topics.every(t=>typeof t==='string'))));}
-  function status(text){message=text;const el=$('#cloud-status');if(el)el.textContent=text;const b=$('#accountButton');if(b)b.textContent=user?'My account':'Sign in';const label=$('#accountName');if(label)label.textContent=user?user.email:'Guest workspace';}
+  function status(text){message=text;const warning=/conflict|not synced|could not load|unsaved changes|unavailable/i.test(text);const pending=/waiting|saving|loading/i.test(text);const state=warning?'warning':pending?'pending':user?'saved':'local';const wrap=$('.account-status-wrap');if(wrap)wrap.dataset.sync=state;const summary=$('#syncSummary');if(summary)summary.textContent=warning?'Sync issue':pending?'Syncing':user?'Saved':'Local';const indicator=$('#syncIndicator');if(indicator)indicator.setAttribute('aria-label','Sync status: '+text);const el=$('#cloud-status');if(el)el.textContent=text;const b=$('#accountButton');if(b)b.textContent=user?'My account':'Sign in';const label=$('#accountName');if(label)label.textContent=user?user.email:'Guest workspace';}
   function guest(){try{const v=JSON.parse(localStorage.getItem(GUEST_KEY));if(validWorkspace(v))return v;}catch{}return adapter.blank();}
   function cache(){if(user)sessionStorage.setItem('study-draft:'+user.id,JSON.stringify({workspace:adapter.read(),revision,dirty}));}
   function render(){adapter?.render();}
@@ -121,7 +121,7 @@
   }
   function recovery(){close();const d=document.createElement('dialog');d.id='accountDialog';d.className='account-dialog';d.innerHTML='<h2>Set a new password</h2><form><div class="field"><label for="newAccountPassword">New password</label><input id="newAccountPassword" type="password" autocomplete="new-password" minlength="8" maxlength="128" required></div><p class="account-message" role="status"></p><p><button class="button" type="submit">Save password</button></p></form>';document.body.append(d);d.showModal();d.querySelector('form').onsubmit=async e=>{e.preventDefault();const input=d.querySelector('input'),{error}=await client.auth.updateUser({password:input.value});input.value='';if(error)d.querySelector('[role="status"]').textContent=error.message;else{close();showAccount('Password updated.');}};}
   async function init(options){
-    adapter=options;$('#accountButton').onclick=()=>showAccount();status('Saved in this browser');
+    adapter=options;$('#accountButton').onclick=()=>showAccount();$('#syncIndicator').onclick=()=>showAccount();status('Saved in this browser');
     if(!configured())return;
     try{
       if(!window.supabase?.createClient)throw Error('Account service could not start. Refresh to retry.');
