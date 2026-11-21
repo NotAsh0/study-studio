@@ -1,10 +1,16 @@
 (() => {
   const GUEST_KEY='study-studio-v1';
+  const AUTOSAVE_KEY='study-autosave:';
   let client,adapter,user=null,revision=0,lastSaved='',dirty=false,loading=false,timer,flight=null,conflict=false,ready=false,message='',switching=null;
   let revisionChannel=null,latestOtherRevision=0;
+  let lastObserved='',savingSnapshot=null;
   const $=s=>document.querySelector(s);
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const clone=x=>structuredClone(x);
+  const snapshot=workspace=>JSON.stringify(workspace,(_,value)=>{
+    if(value===null||typeof value!=='object'||Array.isArray(value))return value;
+    return Object.fromEntries(Object.keys(value).sort().map(key=>[key,value[key]]));
+  });
   const config=window.STUDY_CLOUD_CONFIG||{};
   const redirectUrl=()=>location.origin+location.pathname;
   const oauthProviders=[{id:'google',name:'Google',enabled:config.googleEnabled},{id:'github',name:'GitHub',enabled:config.githubEnabled}];
@@ -14,7 +20,46 @@
     try{return JSON.parse(atob(config.publishableKey.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).role==='anon';}catch{return false;}
   }
   function validWorkspace(v){return v&&v.version===1&&Array.isArray(v.profiles)&&v.profiles.length>0&&v.profiles.length<100&&v.profiles.every(p=>p&&typeof p.id==='string'&&typeof p.name==='string'&&Array.isArray(p.courses)&&Array.isArray(p.statuses)&&p.statuses.length&&p.statuses.every(s=>typeof s==='string')&&p.progress&&typeof p.progress==='object'&&p.scores&&typeof p.scores==='object'&&Array.isArray(p.rules)&&p.courses.every(c=>c&&typeof c.code==='string'&&typeof c.name==='string'&&Number.isFinite(+c.credits)&&Array.isArray(c.units)&&c.units.every(u=>u&&typeof u.name==='string'&&Array.isArray(u.topics)&&u.topics.every(t=>typeof t==='string'))));}
-  function status(text){message=text;const warning=/conflict|not synced|could not load|unsaved changes|unavailable/i.test(text);const pending=/waiting|saving|loading/i.test(text);const state=warning?'warning':pending?'pending':user?'saved':'local';const wrap=$('.account-status-wrap');if(wrap)wrap.dataset.sync=state;const summary=$('#syncSummary');if(summary)summary.textContent=warning?'Sync issue':pending?'Syncing':user?'Saved':'Local';const indicator=$('#syncIndicator');if(indicator)indicator.setAttribute('aria-label','Sync status: '+text);const el=$('#cloud-status');if(el)el.textContent=text;const b=$('#accountButton');if(b)b.textContent=user?'My account':'Sign in';const label=$('#accountName');if(label)label.textContent=user?user.email:'Guest workspace';}
+  function status(text, localDraft=false){
+    message=text;
+    const warning=/conflict|not synced|could not load|unavailable/i.test(text);
+    const pending=/waiting|saving|loading/i.test(text);
+    const wrap=$('.account-status-wrap');
+    if(wrap)wrap.dataset.sync=warning?'warning':pending||localDraft?'pending':user?'saved':'local';
+    const summary=$('#syncSummary');
+    if(summary)summary.textContent=warning?'Sync issue':localDraft?'Local draft':pending?'Syncing':user?'Saved':'Local';
+    const indicator=$('#syncIndicator');
+    if(indicator)indicator.setAttribute('aria-label','Sync status: '+text);
+    const el=$('#cloud-status');
+    if(el)el.textContent=text;
+    const result=$('#accountDialog .sync-result');
+    if(result)result.textContent=text;
+    const button=$('#accountButton');
+    if(button)button.textContent=user?'My account':'Sign in';
+    const label=$('#accountName');
+    if(label)label.textContent=user?user.email:'Guest workspace';
+  }
+  function autosaveEnabled(){return localStorage.getItem(AUTOSAVE_KEY+user.id)!=='off';}
+  function showSyncState(){
+    if(!dirty){
+      status(revision?'Saved to your account':'Workspace ready',!revision);
+    }else if(autosaveEnabled()){
+      status('Changes waiting to sync…');
+    }else{
+      status('Draft saved in this tab. Select Sync now to save to your account.',true);
+    }
+  }
+  function scheduleAutosave(delay=700){
+    if(user&&ready&&dirty&&!conflict&&!flight&&autosaveEnabled())timer=setTimeout(()=>flush(),delay);
+  }
+  function applyAutosavePreference(){
+    clearTimeout(timer);
+    const checkbox=$('#accountDialog .autosave-toggle');
+    if(checkbox)checkbox.checked=autosaveEnabled();
+    if(!ready||conflict||flight)return;
+    showSyncState();
+    scheduleAutosave();
+  }
   function guest(){try{const v=JSON.parse(localStorage.getItem(GUEST_KEY));if(validWorkspace(v))return v;}catch{}return adapter.blank();}
   function cache(){if(user)sessionStorage.setItem('study-draft:'+user.id,JSON.stringify({workspace:adapter.read(),revision,dirty}));}
   function render(){adapter?.render();}
@@ -48,15 +93,29 @@
         if(error)throw error;
         let workspace=data?.document||adapter.blank();
         if(!validWorkspace(workspace))throw Error('The saved workspace has an unsupported format.');
-        revision=data?.revision||0;lastSaved=JSON.stringify(workspace);
-        let draft;try{draft=JSON.parse(sessionStorage.getItem('study-draft:'+user.id));}catch{}
+        revision=data?.revision||0;
+        lastSaved=snapshot(workspace);
+        lastObserved=lastSaved;
+        let draft;
+        try{draft=JSON.parse(sessionStorage.getItem('study-draft:'+user.id));}catch{}
         if(draft?.dirty&&validWorkspace(draft.workspace)){
-          workspace=draft.workspace;dirty=true;
-          if(draft.revision!==revision){conflict=true;status('Another session saved newer data. Review the sync conflict in My account.');}
+          const restored=snapshot(draft.workspace);
+          if(restored!==lastSaved){
+            workspace=draft.workspace;
+            lastObserved=restored;
+            dirty=true;
+            if(draft.revision!==revision){
+              revision=Number.isSafeInteger(draft.revision)?draft.revision:-1;
+              flagSyncConflict();
+            }
+          }
         }
         ready=true;loading=false;adapter.replace(clone(workspace));cache();
         if(latestOtherRevision>revision)flagSyncConflict();
-        if(!conflict){status(dirty?'Unsaved changes restored':'Saved to your account');if(dirty||!data){dirty=true;timer=setTimeout(flush,500);}}
+        if(!conflict){
+          showSyncState();
+          scheduleAutosave();
+        }
       }catch(error){loading=false;ready=false;status('Account data could not load. Open My account to retry.');showAccount(error.message||'Unable to load your saved data.');render();}
     })();
     try{await switching;}finally{switching=null;}
@@ -64,42 +123,65 @@
   function leaveAccount(){
     clearTimeout(timer);if(user&&!dirty)sessionStorage.removeItem('study-draft:'+user.id);
     watchWorkspaceRevisions(null);
-    user=null;revision=0;lastSaved='';dirty=false;ready=false;loading=false;conflict=false;status('Saved in this browser');adapter.replace(guest());
+    user=null;revision=0;lastSaved='';lastObserved='';dirty=false;ready=false;loading=false;conflict=false;status('Saved in this browser');adapter.replace(guest());
   }
   function persist(workspace){
     if(!user){localStorage.setItem(GUEST_KEY,JSON.stringify(workspace));return;}
     if(!ready||loading)return;
-    const serialized=JSON.stringify(workspace);if(serialized===lastSaved&&!dirty)return;
-    dirty=true;cache();clearTimeout(timer);
-    if(!conflict){status('Changes waiting to sync…');timer=setTimeout(flush,700);}
-  }
-  async function flush(){
+    const observed=snapshot(workspace);
+    if(observed===lastObserved)return;
+    lastObserved=observed;
+    dirty=observed!==lastSaved||(savingSnapshot!==null&&observed!==savingSnapshot);
+    cache();
     clearTimeout(timer);
-    if(flight)return flight;
-    if(!user||!ready||!dirty||conflict)return !dirty;
-    const currentId=user.id,document=clone(adapter.read()),serialized=JSON.stringify(document),base=revision;
+    if(conflict||flight)return;
+    showSyncState();
+    scheduleAutosave();
+  }
+  async function flush(manual=false){
+    if(!user||!ready||conflict)return !dirty;
+    if(!manual&&!autosaveEnabled())return !dirty;
+    clearTimeout(timer);
+    if(flight){
+      if(!manual)return flight;
+      if(!await flight)return false;
+      return flush(true);
+    }
+    if(!dirty)return true;
+    const currentId=user.id,base=revision,serialized=lastObserved;
+    savingSnapshot=serialized;
     status('Saving to your account…');
+    let saved=false;
     flight=(async()=>{
       try{
-        const {data,error}=await client.rpc('save_study_workspace',{p_document:document,p_expected_revision:base});
+        const {data,error}=await client.rpc('save_study_workspace',{p_document:JSON.parse(serialized),p_expected_revision:base});
         if(error)throw error;
         if(user?.id!==currentId)return false;
-        revision=Number(data);lastSaved=serialized;dirty=JSON.stringify(adapter.read())!==serialized;cache();
+        revision=Number(data);
+        lastSaved=serialized;
+        saved=true;
         revisionChannel?.postMessage(revision);
-        status(dirty?'Changes waiting to sync…':'Saved to your account');
         return true;
       }catch(error){
         if(user?.id!==currentId)return false;
-        if(error.code==='PT409'||error.code==='40001'||String(error.message).includes('STUDY_CONFLICT'))flagSyncConflict();
-        else status('Not synced — changes remain on this device. Open My account to retry.');
-        cache();return false;
+        if(error?.code==='PT409'||error?.code==='40001'||String(error?.message).includes('STUDY_CONFLICT'))flagSyncConflict();
+        else status('Not synced — changes remain in this tab. Open My account to retry.');
+        return false;
       }
     })();
     try{return await flight;}
     finally{
       flight=null;
-      if(ready&&!conflict&&latestOtherRevision>revision)flagSyncConflict();
-      if(dirty&&!conflict&&message==='Changes waiting to sync…')timer=setTimeout(flush,300);
+      savingSnapshot=null;
+      if(user?.id===currentId){
+        dirty=lastObserved!==lastSaved;
+        cache();
+        if(!conflict&&latestOtherRevision>revision)flagSyncConflict();
+        if(!conflict&&(saved||!dirty||lastObserved!==serialized)){
+          showSyncState();
+          scheduleAutosave();
+        }
+      }
     }
   }
   function close(){const el=$('#accountDialog');if(el){el.close();el.remove();}}
@@ -108,9 +190,11 @@
     close();const dialog=document.createElement('dialog');dialog.id='accountDialog';dialog.className='account-dialog';
     dialog.innerHTML=`<div class="sectionhead"><div><div class="eyebrow">YOUR STUDY SPACE</div><h2>${user?'My account':'Welcome to Study Studio'}</h2></div><button class="icon close-account" aria-label="Close account window">×</button></div>${notice?`<p class="account-message" role="status">${esc(notice)}</p>`:''}
       ${!configured()?'<p class="muted">Online accounts are being set up. Your local workspace is available and stays saved in this browser.</p>':user?`
-      <p class="muted">Signed in as <strong>${esc(user.email)}</strong>. Each account has its own profiles, topics and scores.</p><p class="result" role="status">${esc(message)}</p>
+      <p class="muted">Signed in as <strong>${esc(user.email)}</strong>. Each account has its own profiles, topics and scores.</p><p class="result sync-result" role="status">${esc(message)}</p>
+      <label><input type="checkbox" class="autosave-toggle" ${autosaveEnabled()?'checked':''}> Autosave to my account</label>
+      <p class="note">Turn off autosave to keep drafts in this tab until you select Sync now. Export a backup before closing the tab with unsynced changes.</p>
       <div class="toolbar"><button class="button retry-sync">${ready?'Sync now':'Retry loading account'}</button><button class="button secondary export-draft">Export backup</button>${conflict?'<button class="button secondary load-latest">Load latest account data</button>':''}</div>
-      <p class="note">Unsynced changes stay on this device until saved. If another device has saved newer changes, export a backup before loading the latest account data.</p>
+      <p class="note">If another device has saved newer changes, export a backup before loading the latest account data.</p>
       <hr><h3>Bring your existing work</h3><p class="note">Copy this browser’s guest workspace into this account. This replaces this account’s current profiles after confirmation.</p><button class="button secondary import-guest" ${!ready||conflict?'disabled':''}>Copy guest workspace to my account</button><p><button class="button secondary sign-out">Sign out</button></p>`:`
       <p class="muted">Sign in to save your profiles and progress privately, and continue on another device.</p>
       <div class="auth-providers">${oauthProviders.filter(p=>p.enabled||p.id==='google').map(p=>`<button class="button secondary oauth-signin ${p.id}-signin" data-provider="${p.id}" ${p.enabled?'':'disabled'}>Continue with ${p.name}${p.enabled?'':'<span class="provider-pending">Coming soon</span>'}</button>`).join('')}</div>${config.emailEnabled!==false?'<div class="auth-divider">OR USE EMAIL</div>':''}
@@ -119,11 +203,20 @@
     document.body.append(dialog);dialog.showModal();dialog.querySelector('.close-account').onclick=close;
     if(!configured())return;
     if(user){
-      dialog.querySelector('.retry-sync').onclick=async()=>{if(!ready){const {data}=await client.auth.getSession();await loadAccount(data.session);}else await flush();showAccount();};
+      dialog.querySelector('.autosave-toggle').onchange=e=>{
+        localStorage.setItem(AUTOSAVE_KEY+user.id,e.target.checked?'on':'off');
+        applyAutosavePreference();
+      };
+      dialog.querySelector('.retry-sync').onclick=async e=>{
+        e.currentTarget.disabled=true;
+        if(!ready){const {data}=await client.auth.getSession();await loadAccount(data.session);}
+        else await flush(true);
+        showAccount();
+      };
       dialog.querySelector('.export-draft').onclick=downloadDraft;
       if(conflict)dialog.querySelector('.load-latest').onclick=async()=>{if(!confirm('Load the latest saved account data? Unsynced changes in this tab will be replaced. Export a backup first if you need to keep them.'))return;sessionStorage.removeItem('study-draft:'+user.id);ready=false;conflict=false;dirty=false;const {data}=await client.auth.getSession();await loadAccount(data.session);showAccount();};
-      dialog.querySelector('.import-guest').onclick=async()=>{if(!confirm('Replace this account’s workspace with this browser’s guest workspace? Export a backup of the current account first if needed.'))return;adapter.replace(guest());persist(adapter.read());await flush();showAccount();};
-      dialog.querySelector('.sign-out').onclick=async()=>{if(dirty&&!(await flush()))return showAccount('Your changes have not synced yet. Export a backup or resolve the sync issue before signing out.');const {error}=await client.auth.signOut({scope:'local'});if(error)return showAccount(error.message);leaveAccount();close();};
+      dialog.querySelector('.import-guest').onclick=async()=>{if(!confirm('Replace this account’s workspace with this browser’s guest workspace? Export a backup of the current account first if needed.'))return;adapter.replace(guest());persist(adapter.read());if(autosaveEnabled())await flush();showAccount();};
+      dialog.querySelector('.sign-out').onclick=async()=>{if(dirty&&autosaveEnabled()&&!(await flush()))return showAccount('Your changes have not synced yet. Export a backup or resolve the sync issue before signing out.');const {error}=await client.auth.signOut({scope:'local'});if(error)return showAccount(error.message);leaveAccount();close();};
     }else{
       dialog.querySelectorAll('.oauth-signin:not(:disabled)').forEach(button=>button.onclick=async()=>{
         button.disabled=true;
@@ -159,6 +252,9 @@
       const {data,error}=await client.auth.getSession();if(error)throw error;if(data.session)await loadAccount(data.session);
     }catch(error){status('Account service unavailable — guest work is still saved locally.');}
     window.addEventListener('online',()=>{if(dirty&&!conflict)flush();});
+    window.addEventListener('storage',event=>{
+      if(user&&event.key===AUTOSAVE_KEY+user.id)applyAutosavePreference();
+    });
     window.addEventListener('beforeunload',e=>{if(dirty){cache();e.preventDefault();e.returnValue='';}});
   }
   window.StudyCloud={init,persist,flush,validWorkspace,isLoading:()=>loading||(!!user&&!ready),showAccount};
