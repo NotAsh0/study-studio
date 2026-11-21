@@ -34,7 +34,7 @@ begin
   end if;
   update public.study_workspaces set document=p_document,revision=revision+1,updated_at=now()
     where user_id=auth.uid() and revision=p_expected_revision returning revision into new_revision;
-  if not found then raise exception 'STUDY_CONFLICT: another session saved newer data' using errcode='40001'; end if;
+  if not found then raise exception 'STUDY_CONFLICT: another session saved newer data' using errcode='PT409'; end if;
   return new_revision;
 end $$;
 revoke all on function public.save_study_workspace(jsonb,integer) from public,anon;
