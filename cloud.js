@@ -1,6 +1,7 @@
 (() => {
   const GUEST_KEY='study-studio-v1';
   let client,adapter,user=null,revision=0,lastSaved='',dirty=false,loading=false,timer,flight=null,conflict=false,ready=false,message='',switching=null;
+  let revisionChannel=null,latestOtherRevision=0;
   const $=s=>document.querySelector(s);
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const clone=x=>structuredClone(x);
@@ -17,11 +18,30 @@
   function guest(){try{const v=JSON.parse(localStorage.getItem(GUEST_KEY));if(validWorkspace(v))return v;}catch{}return adapter.blank();}
   function cache(){if(user)sessionStorage.setItem('study-draft:'+user.id,JSON.stringify({workspace:adapter.read(),revision,dirty}));}
   function render(){adapter?.render();}
+  function flagSyncConflict(){
+    clearTimeout(timer);
+    conflict=true;
+    status('Sync conflict — open My account to keep a backup and load the latest data.');
+  }
+  function watchWorkspaceRevisions(userId){
+    revisionChannel?.close();
+    revisionChannel=null;
+    latestOtherRevision=0;
+    if(!userId||typeof window.BroadcastChannel!=='function')return;
+    const channel=new window.BroadcastChannel('study-workspace-revision:'+userId);
+    revisionChannel=channel;
+    channel.onmessage=({data:nextRevision})=>{
+      if(revisionChannel!==channel||!Number.isSafeInteger(nextRevision)||nextRevision<=revision)return;
+      latestOtherRevision=Math.max(latestOtherRevision,nextRevision);
+      if(ready&&!flight)flagSyncConflict();
+    };
+  }
   async function loadAccount(session){
     if(!session?.user)return leaveAccount();
     if(user?.id===session.user.id&&ready)return;
     if(switching)return switching;
     switching=(async()=>{
+      if(user?.id!==session.user.id){revision=0;watchWorkspaceRevisions(session.user.id);}
       user=session.user;ready=false;loading=true;dirty=false;conflict=false;clearTimeout(timer);status('Loading your account…');render();
       try{
         const {data,error}=await client.from('study_workspaces').select('document,revision').eq('user_id',user.id).maybeSingle();
@@ -35,6 +55,7 @@
           if(draft.revision!==revision){conflict=true;status('Another session saved newer data. Review the sync conflict in My account.');}
         }
         ready=true;loading=false;adapter.replace(clone(workspace));cache();
+        if(latestOtherRevision>revision)flagSyncConflict();
         if(!conflict){status(dirty?'Unsaved changes restored':'Saved to your account');if(dirty||!data){dirty=true;timer=setTimeout(flush,500);}}
       }catch(error){loading=false;ready=false;status('Account data could not load. Open My account to retry.');showAccount(error.message||'Unable to load your saved data.');render();}
     })();
@@ -42,6 +63,7 @@
   }
   function leaveAccount(){
     clearTimeout(timer);if(user&&!dirty)sessionStorage.removeItem('study-draft:'+user.id);
+    watchWorkspaceRevisions(null);
     user=null;revision=0;lastSaved='';dirty=false;ready=false;loading=false;conflict=false;status('Saved in this browser');adapter.replace(guest());
   }
   function persist(workspace){
@@ -62,16 +84,23 @@
         const {data,error}=await client.rpc('save_study_workspace',{p_document:document,p_expected_revision:base});
         if(error)throw error;
         if(user?.id!==currentId)return false;
-        revision=Number(data);lastSaved=serialized;dirty=JSON.stringify(adapter.read())!==serialized;cache();status(dirty?'Changes waiting to sync…':'Saved to your account');
+        revision=Number(data);lastSaved=serialized;dirty=JSON.stringify(adapter.read())!==serialized;cache();
+        revisionChannel?.postMessage(revision);
+        status(dirty?'Changes waiting to sync…':'Saved to your account');
         return true;
       }catch(error){
-        if(error.code==='40001'||String(error.message).includes('STUDY_CONFLICT')){conflict=true;status('Sync conflict — open My account to keep a backup and load the latest data.');}
+        if(user?.id!==currentId)return false;
+        if(error.code==='PT409'||error.code==='40001'||String(error.message).includes('STUDY_CONFLICT'))flagSyncConflict();
         else status('Not synced — changes remain on this device. Open My account to retry.');
         cache();return false;
       }
     })();
-    let result;try{result=await flight;}finally{flight=null;if(dirty&&!conflict&&message==='Changes waiting to sync…')timer=setTimeout(flush,300);}
-    return result;
+    try{return await flight;}
+    finally{
+      flight=null;
+      if(ready&&!conflict&&latestOtherRevision>revision)flagSyncConflict();
+      if(dirty&&!conflict&&message==='Changes waiting to sync…')timer=setTimeout(flush,300);
+    }
   }
   function close(){const el=$('#accountDialog');if(el){el.close();el.remove();}}
   function downloadDraft(){const blob=new Blob([JSON.stringify(adapter.read(),null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='study-studio-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
