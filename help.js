@@ -38,7 +38,7 @@ function helpPage() {
     <section class="section panel">
       <h2>Defaults, sync and backups</h2>
       <p class="muted"><strong>Common settings.</strong> Set default grade boundaries for new profiles and assessment weights for new courses. To use the defaults in the current profile, use the apply buttons. Applying grade defaults replaces that profile’s boundaries. Applying assessment defaults fills courses that have no assessments.</p>
-      <p class="muted"><strong>Sync.</strong> Wait for <strong>Saved to your account</strong> before leaving. Sign in with the same account on another device. If a sync conflict appears, export a backup before choosing <strong>Load latest account data</strong>.</p>
+      <p class="muted"><strong>Sync.</strong> Autosave sends changes to your account. To save manually, open <strong>My account</strong>, turn off <strong>Autosave to my account</strong>, and use <strong>Sync now</strong>. Wait for <strong>Saved to your account</strong> before leaving. Sign in with the same account on another device. If a sync conflict appears, export a backup before choosing <strong>Load latest account data</strong>.</p>
       <p class="muted"><strong>Backups.</strong> Export or import a JSON backup in <strong>Manage workspace</strong>. Guest work stays in its original browser and site address. To move it between site addresses, export it at the old address and import it at the new one. Importing a backup or choosing <strong>My account → Copy guest workspace to my account</strong> replaces the destination workspace after confirmation.</p>
       <div class="toolbar">
         <a class="button secondary" href="https://github.com/NotAsh0/study-studio#readme" target="_blank" rel="noopener noreferrer">Project on GitHub ↗</a>
